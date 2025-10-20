@@ -1,0 +1,8 @@
+Planned test cases:
+1. Registration form validation
+2. Email confirmation flow
+3. Login/authentication
+4. Create donation post
+5. Claim donation flow
+6. Admin approve/reject donation
+7. Edge cases: expired items, missing fields
