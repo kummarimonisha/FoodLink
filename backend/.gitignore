@@ -1,38 +1,34 @@
 # ----------------------------------------------------------
-# Entorno virtual de Python
+# Python virtual environment
 # ----------------------------------------------------------
-# Esta carpeta contiene todas las dependencias instaladas.
-# NO se sube a GitHub porque pesa demasiado y se recrea usando:
-#   pip install -r requirements.txt
+# This folder contains all installed dependencies.
+# It should not be committed to GitHub because it can be
+# recreated using `pip install -r requirements.txt`.
 venv/
 
-
 # ----------------------------------------------------------
-# Archivos compilados de Python
+# Python compiled files
 # ----------------------------------------------------------
-# Python genera estos archivos automáticamente para optimizar carga.
-# No tienen utilidad en el repositorio y solo ocupan espacio.
+# Python automatically generates these cached/compiled files.
+# They are not needed in version control.
 __pycache__/
 *.pyc
 
-
 # ----------------------------------------------------------
-# Base de datos y carpeta "instance"
+# Database and instance folder
 # ----------------------------------------------------------
-# SQLite crea la base de datos dentro de la carpeta instance.
-# No debe subirse porque contiene datos locales del desarrollador
-# y se recrea automáticamente al correr la app.
+# Flask stores the SQLite database in the instance folder.
+# The local database should not be committed because it
+# contains developer-specific data.
 instance/
 
-# Excluir la base de datos directamente por si está fuera de instance.
+# Explicitly ignore the SQLite DB in case it exists at root.
 foodlink.db
 
-
 # ----------------------------------------------------------
-# Archivos de configuración sensibles
+# Environment configuration files
 # ----------------------------------------------------------
-# Aquí se ignoran variables de entorno si se llegaran a usar.
-# En producción, claves como SECRET_KEY y JWT_SECRET_KEY
-# deben colocarse en un archivo .env (nunca subirlo al repo).
+# If environment variables are stored in .env files,
+# they should never be committed because they may contain secrets.
 .env
 .env.*
