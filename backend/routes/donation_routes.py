@@ -2,41 +2,41 @@ from flask import Blueprint, request, jsonify
 from models import db, Donation
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-# Blueprint para todas las rutas relacionadas con donaciones.
-# El prefix es /api/donations (registrado en app.py)
+# Blueprint for donation-related routes.
+# Registered in app.py with URL prefix: /api/donations
 donation_bp = Blueprint("donations", __name__)
 
 
 # ----------------------------------------------------------------------
-# CREAR DONACIÓN
+# CREATE DONATION
 # Endpoint: POST /api/donations/
 #
-# RUTA PROTEGIDA → requiere token JWT
+# PROTECTED route → requires JWT token
 # Header:
 #   Authorization: Bearer <token>
 #
-# Body JSON esperado:
+# Expected JSON body:
 # {
-#   "title": "Caja de comida",
-#   "description": "Contiene arroz y frijoles",
+#   "title": "Food box",
+#   "description": "Includes rice and beans",
 #   "category": "non_perishable",
 #   "quantity": 4
 # }
 #
-# Respuestas:
-#   201 → Donación creada correctamente
-#   400 → Faltan campos / datos inválidos
+# Notes:
+# - donor_id is NOT sent from the frontend.
+# - donor_id is inferred from the JWT identity (logged-in user).
 #
-# NOTA PARA FRONTEND:
-# - El backend obtiene automáticamente el donor_id desde el token.
-# - El frontend NO debe enviar donor_id.
+# Responses:
+#   201 → donation created successfully
+#   400 → missing fields or invalid data
 # ----------------------------------------------------------------------
 @donation_bp.route("/", methods=["POST"])
 @jwt_required()
 def create_donation():
     """
-    Crear una donación (solo usuarios logueados).
-    El donor_id se toma del token JWT, no del body.
+    Create a new donation. Only authenticated users can create donations.
+    The donor id is taken from the JWT identity, not from the request body.
     """
     data = request.get_json() or {}
 
@@ -45,24 +45,22 @@ def create_donation():
     category = data.get("category")
     quantity = data.get("quantity")
 
-    # Validación de campos necesarios
     if not title or not quantity:
         return jsonify({"message": "Missing required fields"}), 400
 
-    # Validar que quantity sea número
+    # Ensure quantity is numeric.
     try:
         quantity = int(quantity)
     except ValueError:
         return jsonify({"message": "Quantity must be a number"}), 400
 
-    # Identidad del usuario logueado viene del JWT
+    # Get user id from JWT identity.
     current_user_id = get_jwt_identity()
     try:
         donor_id = int(current_user_id)
     except (TypeError, ValueError):
         return jsonify({"message": "Invalid user id in token"}), 400
 
-    # Crear la donación
     donation = Donation(
         title=title,
         description=description,
@@ -70,7 +68,7 @@ def create_donation():
         quantity=quantity,
         expiration_date=None,
         donor_id=donor_id,
-        status="pending"   # Estado inicial
+        status="pending",
     )
 
     db.session.add(donation)
@@ -82,40 +80,37 @@ def create_donation():
             "id": donation.id,
             "title": donation.title,
             "quantity": donation.quantity,
-            "status": donation.status
-        }
+            "status": donation.status,
+        },
     }), 201
 
 
-
 # ----------------------------------------------------------------------
-# LISTAR DONACIONES DISPONIBLES
+# LIST AVAILABLE DONATIONS
 # Endpoint: GET /api/donations/available
 #
-# RUTA PÚBLICA → no necesita token
+# PUBLIC route → does not require authentication.
+# The frontend can use this to show all donations that are not rejected.
 #
-# El frontend puede usarla para:
-#   - mostrar todas las donaciones disponibles
-#
-# Respuesta:
+# Response (example):
 # [
 #   {
 #     "id": 1,
-#     "title": "Comida enlatada",
+#     "title": "Canned food",
+#     "description": "4 canned items",
+#     "category": "non_perishable",
 #     "quantity": 4,
 #     "status": "pending",
 #     "donor_id": 2
-#   }, ...
+#   },
+#   ...
 # ]
-#
-# NOTA:
-# - Filtramos donaciones rechazadas → no se muestran
 # ----------------------------------------------------------------------
 @donation_bp.route("/available", methods=["GET"])
 def get_available_donations():
     """
-    Lista todas las donaciones que NO estén rechazadas.
-    Ruta pública.
+    List all donations that are not rejected.
+    This endpoint is public.
     """
     donations = Donation.query.filter(Donation.status != "rejected").all()
 
@@ -128,49 +123,47 @@ def get_available_donations():
             "category": d.category,
             "quantity": d.quantity,
             "status": d.status,
-            "donor_id": d.donor_id
+            "donor_id": d.donor_id,
         })
 
     return jsonify(result), 200
 
 
-
 # ----------------------------------------------------------------------
-# LISTAR MIS DONACIONES
+# LIST MY DONATIONS
 # Endpoint: GET /api/donations/mine
 #
-# RUTA PROTEGIDA → requiere token JWT
+# PROTECTED route → requires JWT token
 # Header:
 #   Authorization: Bearer <token>
 #
-# Respuesta:
+# Returns all donations created by the currently logged-in user.
+#
+# Response (example):
 # [
 #   {
 #     "id": 1,
-#     "title": "Caja de comida",
+#     "title": "Food box",
+#     "description": "Includes rice and beans",
+#     "category": "non_perishable",
 #     "quantity": 4,
 #     "status": "pending"
-#   }, ...
+#   },
+#   ...
 # ]
-#
-# El frontend puede usar esta ruta para mostrar:
-#   - donaciones creadas por el usuario logueado.
 # ----------------------------------------------------------------------
 @donation_bp.route("/mine", methods=["GET"])
 @jwt_required()
 def get_my_donations():
     """
-    Listar las donaciones del usuario logueado.
+    List all donations belonging to the currently authenticated user.
     """
-    # Obtener id del usuario desde el token
     current_user_id = get_jwt_identity()
-
     try:
         donor_id = int(current_user_id)
     except (TypeError, ValueError):
         return jsonify({"message": "Invalid user id in token"}), 400
 
-    # Consultar donaciones del usuario
     donations = Donation.query.filter_by(donor_id=donor_id).all()
 
     result = []
@@ -181,7 +174,7 @@ def get_my_donations():
             "description": d.description,
             "category": d.category,
             "quantity": d.quantity,
-            "status": d.status
+            "status": d.status,
         })
 
     return jsonify(result), 200
