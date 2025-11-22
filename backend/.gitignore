@@ -1,0 +1,14 @@
+# Entorno virtual
+venv/
+
+# Archivos compilados de Python
+__pycache__/
+*.pyc
+
+# Base de datos y carpeta instance
+instance/
+foodlink.db
+
+# Archivos de entorno (si llegas a crear uno)
+.env
+.env.*
