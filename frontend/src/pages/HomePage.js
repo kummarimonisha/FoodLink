@@ -1,22 +1,19 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from "react";
 
-function HomePage() {
-      const [message, setMessage] = useState("");
-    
-      useEffect(() => {
-        fetch("http://localhost:5000/api/health")
-        .then(response => response.json())
-        .then(data => setMessage(data.message))
-        .catch(error => console.error('Error:', error));
-    
-      })
-    
+export default function HomePage() {
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/health")
+      .then((r) => r.json())
+      .then((d) => setMessage(d.message));
+  }, []);
+
   return (
-    <div>
-      <h1>{message}</h1>
-      <p>This is also the front end running.</p>
+    <div className="card">
+      <h1>FoodLink</h1>
+      <p>{message}</p>
+      <p>Welcome to the platform! Use the navbar to explore your options.</p>
     </div>
   );
 }
-
-export default HomePage;
