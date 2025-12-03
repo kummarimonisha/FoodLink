@@ -1,9 +1,11 @@
+from datetime import datetime, timedelta, timezone
 from flask import Blueprint, request, jsonify
 from models import db, User
 from flask_jwt_extended import (
     create_access_token,
     jwt_required,
     get_jwt_identity,
+    get_jwt
 )
 
 # Blueprint for all authentication-related routes.
@@ -187,3 +189,106 @@ def auth_ping():
     Simple endpoint to verify that the auth blueprint is registered.
     """
     return jsonify({"message": "auth blueprint is working"}), 200
+
+
+# ----------------------------------------------------------------------
+# FORGOT PASSWORD — Forgot a password
+# Endpoint: POST /api/auth/forgot-password
+#
+# Expected JSON body:
+# {
+#   "email": "example@mail.com"
+# }
+#
+# Responses:
+#   201 → Created a reset password page
+#   400 → missing email or user does not exist
+# ----------------------------------------------------------------------
+@auth_bp.route("/forgot-password", methods=["POST"])
+def auth_forgot_password():
+    data = request.get_json()
+
+    email = data.get("email")
+
+    if not email :
+        return jsonify({"message": "Missing Email"}), 400
+
+    # Check if the email or username already exists.
+    existing_user = User.query.filter(
+        (User.email == email)
+    ).first()
+
+    if not existing_user:
+        return jsonify({"message": "User does not exist"}), 400
+
+    token = generate_reset_token(email)
+
+    new_password_url = f"http://localhost:3000/reset-password/{token}"
+
+    return jsonify({"message": "The Reset Password Link has been sent to your email",
+                    "reset_link": new_password_url}), 201
+
+"""
+Helper function for generating a token to reset a password that lasts 10 minutes.
+"""
+def generate_reset_token(email):
+    payload = {
+        "email": email,
+        "type": "password_reset"
+    }
+    token = create_access_token(identity=email,
+                                additional_claims=payload,
+                                expires_delta=timedelta(minutes=10))
+    return token
+
+
+# ----------------------------------------------------------------------
+# RESET PASSWORD — Reset a password
+# Endpoint: POST /api/auth/reset-password
+#
+# Expected JSON body:
+# {
+#   "password": "mypassword"
+# }
+#
+# JWT Headers:
+# {
+#   "email": "example@mail.com",
+#   "type": "password_reset"
+# }
+# Responses:
+#   200 → Password changed successfully
+#   400 → missing token or password or user does not exist
+# ----------------------------------------------------------------------
+@auth_bp.route("/reset-password", methods=["POST"])
+@jwt_required()
+def auth_reset_password():
+    """
+    User registration endpoint.
+    Handles signup for donors, recipients, or admins (if needed).
+    """
+    data = request.get_json()
+    new_pass_info = get_jwt()
+    email = new_pass_info.get("email")
+    new_password = data.get("password")
+
+    if not new_password :
+        return jsonify({"message": "Missing New Password"}), 400
+
+
+    if new_pass_info.get("type") != "password_reset":
+        return jsonify({"message": "Invalid Token"}), 400
+    
+    # Check if the email or username already exists.
+    existing_user = User.query.filter(
+        (User.email == email)
+    ).first()
+
+    if not existing_user:
+        return jsonify({"message": "User does not exist"}), 400
+
+    existing_user.set_password(new_password)
+
+    db.session.commit()
+
+    return jsonify({"message": "Password Reset Successfully"}), 200

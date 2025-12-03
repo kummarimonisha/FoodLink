@@ -1,8 +1,7 @@
 import { Link } from "react-router-dom";
 import './Navbar.css';
-export default function Navbar() {
+export default function Navbar() { //Navbar 
   const token = localStorage.getItem("access_token");
-  const user = localStorage.getItem("username");
 
 
 function logout() {
@@ -20,15 +19,18 @@ function logout() {
         <Link to="/">Foodlink</Link>
       </div>
 
-      <ul className="navbar-links">
+      <ul className="navbar-links"> 
         <li><Link to="/">Home</Link></li>
         {token ? (
           <>
+
+            {/* If logged in show Profile and Logout Buttons */}
             <li><Link to="/profile">{"Profile"}</Link></li>
             <li><button onClick={logout} className="logout-btn">Logout</button></li>
           </>
         ) : (
           <>
+            {/* Otherwise show Login and Register Buttons */}
             <li><Link to="/login">Login</Link></li>
             <li><Link to="/register">Register</Link></li>
           </>

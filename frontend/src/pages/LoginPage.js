@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useState} from 'react';
 import { useNavigate } from "react-router-dom";
 import axios from 'axios';
 function LoginPage() {
@@ -6,7 +6,10 @@ function LoginPage() {
       const [password, setPassword] = useState("");
       const [error, setError] = useState("");
       const navigate = useNavigate();
-    
+      const handleForgotPassword = () => {
+        navigate("/forgot-password");
+      };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -22,11 +25,15 @@ function LoginPage() {
       localStorage.setItem("username", res.data.user.username);
       localStorage.setItem("role", res.data.user.role);
       navigate("/profile");
+      window.location.reload();
 
     } catch (err) {
       setError("Invalid email or password");
     }
+  
+  
   };
+
     
   return (
     <div className="login-container">
@@ -51,6 +58,13 @@ function LoginPage() {
 
         {error && <p style={{ color: "red" }}>{error}</p>}
       </form>
+            <button 
+        type="button" 
+        onClick={handleForgotPassword} 
+        style={{ marginTop: "10px" }}
+      >
+        Forgot Password?
+      </button>
     </div>
   );
 }
