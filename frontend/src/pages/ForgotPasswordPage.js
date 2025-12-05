@@ -1,31 +1,62 @@
-import React, { useState } from "react";
+import React, { useState} from 'react';
 
-export default function ForgotPasswordPage() {
+function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-
-  function handleSubmit(e) {
+  const [resetLink, setResetLink] = useState("");
+  const [error, setError] = useState(null);
+  const [message, setMessage] = useState(null);
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage("If this email exists, password reset instructions were sent.");
+    setMessage(null);
+    setError(null);
+  
+  // Grab info from backend
+  const res = await fetch("http://localhost:5000/api/auth/forgot-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    setError(data.message);
+    return;
   }
 
-  return (
-    <div className="page-container">
-      <h2>Reset Password</h2>
+  setMessage(data.message);
 
-      <form onSubmit={handleSubmit} className="form-box">
-        <label>Enter your email</label>
+  if (data.reset_link) {
+    setResetLink(data.reset_link);
+  }
+  };
+
+  return (
+    <div>
+      <h2>Forgot Password</h2>
+      <form onSubmit={handleSubmit}>
         <input
           type="email"
-          placeholder="example@email.com"
+          placeholder="Enter your email:"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
         />
-
-        <button className="btn-primary">Send Reset Link</button>
+        <button type="submit">Send Reset Link</button>
       </form>
 
-      {message && <p className="success-msg">{message}</p>}
+      {resetLink && (
+        <div style={{ marginTop: "20px" }}>
+          <p><strong>Reset Link:</strong></p>
+          <a href={resetLink}>{resetLink}</a>
+        </div>
+      )}
+
+      {/* Display Changed Successfully or Error messages */}
+      {message && <p style={{ color: "green" }}>{message}</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
     </div>
   );
 }
+
+export default ForgotPasswordPage;

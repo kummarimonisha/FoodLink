@@ -17,6 +17,7 @@ import RequestDonationPage from './pages/RequestDonationPage';
 import FilterDonationsPage from './pages/FilterDonationsPage';
 
 import ProtectedRoute from './pages/ProtectedRoute';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 // Components
 import Navbar from "./components/Navbar/Navbar";
@@ -28,10 +29,17 @@ function App() {
         <Navbar />
 
         <Routes>
+          {/* Routes*/}
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+            <ProfilePage /> {/* Protected so can't be accessed without being logged in */}
+            </ProtectedRoute>
+            } />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
           <Route 
             path="/profile" 

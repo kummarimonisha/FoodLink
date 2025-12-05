@@ -20,11 +20,12 @@ export default function Navbar() {
         <Link to="/">FoodLink</Link>
       </div>
 
-      <ul className="navbar-links">
+      <ul className="navbar-links"> 
         <li><Link to="/">Home</Link></li>
 
         {!token && (
           <>
+            {/* Otherwise show Login and Register Buttons */}
             <li><Link to="/login">Login</Link></li>
             <li><Link to="/register">Register</Link></li>
           </>
