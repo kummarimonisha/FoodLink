@@ -8,7 +8,7 @@ export default function EditProfilePage() {
   function handleSubmit(e) {
     e.preventDefault();
 
-    fetch("http://localhost:5000/api/profile/update", {
+    fetch("http://localhost:5000/api/auth/profile/update", {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",

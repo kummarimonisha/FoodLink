@@ -292,3 +292,50 @@ def auth_reset_password():
     db.session.commit()
 
     return jsonify({"message": "Password Reset Successfully"}), 200
+
+# ----------------------------------------------------------------------
+# Profile Update — Update Profile
+# Endpoint: POST /api/auth/profile/update
+#
+# Expected JSON body:
+# {
+#   "username": "username123"
+#   "email": "email@email.com"
+# }
+#
+# Responses:
+#   200 → Username/Email changed successfully
+#   400 → incorrect inputs or username/email taken already
+# ----------------------------------------------------------------------
+@auth_bp.route("/profile/update", methods=["PATCH"])
+@jwt_required()
+def update_user():
+    user_id = get_jwt_identity()
+    data = request.get_json()
+
+    new_username = data.get("username")
+    new_email = data.get("email")
+
+    if not new_username or not new_email:
+        return jsonify({"msg": "Username and email required"}), 400
+
+    # Fetch user
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"msg": "User not found"}), 400
+
+    # Check if username is taken by someone else
+    if User.query.filter(User.username == new_username, User.id != user_id).first():
+        return jsonify({"msg": "Username already in use"}), 400
+
+    # Check if email is taken by someone else
+    if User.query.filter(User.email == new_email, User.id != user_id).first():
+        return jsonify({"msg": "Email already in use"}), 400
+
+
+    user.username = new_username
+    user.email = new_email
+    db.session.commit()
+
+    return jsonify({"msg": "Profile updated", 
+                    "user": {"username": user.username, "email": user.email}}), 200
