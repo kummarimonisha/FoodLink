@@ -1,16 +1,12 @@
-import React, { useState} from 'react';
-import { useNavigate } from "react-router-dom";
-import axios from 'axios';
-function LoginPage() {
-      const [email, setEmail] = useState("");
-      const [password, setPassword] = useState("");
-      const [error, setError] = useState("");
-      const navigate = useNavigate();
-      const handleForgotPassword = () => {
-        navigate("/forgot-password");
-      };
+import React, { useState } from "react";
+import axios from "axios";
 
-  const handleSubmit = async (e) => {
+export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  async function handleSubmit(e) {
     e.preventDefault();
     setError("");
 
@@ -24,49 +20,57 @@ function LoginPage() {
       localStorage.setItem("email", res.data.user.email);
       localStorage.setItem("username", res.data.user.username);
       localStorage.setItem("role", res.data.user.role);
-      navigate("/profile");
-      window.location.reload();
 
+      window.location.href = "/profile";
     } catch (err) {
       setError("Invalid email or password");
     }
-  
-  
-  };
+  }
 
-    
   return (
-    <div className="login-container">
-      <form onSubmit={handleSubmit}>
-        <h2>Login</h2>
+    <div className="card" style={{ maxWidth: "450px", margin: "auto" }}>
+      <h2>Login</h2>
 
+      <form onSubmit={handleSubmit}>
+        <label>Email</label>
         <input
           type="email"
-          placeholder="Email"
+          placeholder="Enter your email"
           onChange={(e) => setEmail(e.target.value)}
-          value={email}
+          style={{ display: "block", width: "100%" }}
         />
 
+        <label>Password</label>
         <input
           type="password"
-          placeholder="Password"
+          placeholder="Enter your password"
           onChange={(e) => setPassword(e.target.value)}
-          value={password}
+          style={{ display: "block", width: "100%" }}
         />
 
-        <button type="submit">Login</button>
+        {error && <p style={{ color: "red", marginTop: "8px" }}>{error}</p>}
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        <button
+          className="btn btn-primary"
+          type="submit"
+          style={{ marginTop: "12px" }}
+        >
+          Login
+        </button>
       </form>
-            <button 
-        type="button" 
-        onClick={handleForgotPassword} 
-        style={{ marginTop: "10px" }}
-      >
-        Forgot Password?
-      </button>
+
+      <p style={{ marginTop: "12px" }}>
+        <a href="/forgot-password" className="small-link">
+          Forgot Password?
+        </a>
+      </p>
+
+      <p style={{ marginTop: "5px" }}>
+        Don’t have an account?{" "}
+        <a href="/register" className="small-link">
+          Register here
+        </a>
+      </p>
     </div>
   );
 }
-
-export default LoginPage;
