@@ -1,118 +1,80 @@
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
+
 from flask import Blueprint, request, jsonify
 from models import db, User
 from flask_jwt_extended import (
     create_access_token,
     jwt_required,
     get_jwt_identity,
-    get_jwt
+    get_jwt,
 )
 
-# Blueprint for all authentication-related routes.
-# Registered in app.py with URL prefix: /api/auth
+from email_utils import send_registration_email, send_password_reset_email
+from security import role_required
+
+# This blueprint groups all authentication-related routes
+# and they will be prefixed with /api/auth in app.py
 auth_bp = Blueprint("auth", __name__)
 
 
-# ----------------------------------------------------------------------
-# REGISTER — Create a new user account
-# Endpoint: POST /api/auth/register
-#
-# Expected JSON body:
-# {
-#   "email": "example@mail.com",
-#   "username": "user123",
-#   "password": "mypassword",
-#   "role": "donor"  // optional, defaults to "recipient"
-# }
-#
-# Responses:
-#   201 → user created successfully
-#   400 → missing fields or email/username already exists
-# ----------------------------------------------------------------------
 @auth_bp.route("/register", methods=["POST"])
 def auth_register():
     """
-    User registration endpoint.
-    Handles signup for donors, recipients, or admins (if needed).
+    This endpoint is used to register a new user account.
+
+    Steps:
+    1. Validate requested data
+    2. Check if user already exists
+    3. Create the new user in the database
+    4. Simulate sending a welcome email (printed in console)
     """
     data = request.get_json() or {}
 
     email = data.get("email")
     username = data.get("username")
     password = data.get("password")
-    role = data.get("role", "recipient")
+    role = data.get("role", "recipient")  # default role if none is given
 
     if not email or not username or not password:
         return jsonify({"message": "Missing required fields"}), 400
 
-    # Check if the email or username already exists.
+    # Prevent duplicated accounts
     existing_user = User.query.filter(
         (User.email == email) | (User.username == username)
     ).first()
-
     if existing_user:
         return jsonify({"message": "Email or username already exists"}), 400
 
-    # Create and persist the new user.
-    user = User(
-        email=email,
-        username=username,
-        role=role,
-    )
+    # Save the new user
+    user = User(email=email, username=username, role=role)
     user.set_password(password)
-
     db.session.add(user)
     db.session.commit()
 
-    return jsonify({"message": "User registered successfully"}), 201
+    # Email is only simulated for this project
+    email_preview = send_registration_email(user.email, user.username)
+
+    return jsonify({
+        "message": "User registered successfully",
+        "email_preview": email_preview,
+    }), 201
 
 
-# ----------------------------------------------------------------------
-# LOGIN — Authenticate a user and return a JWT
-# Endpoint: POST /api/auth/login
-#
-# JSON options:
-# {
-#   "email": "example@mail.com",
-#   "password": "mypassword"
-# }
-#   OR
-# {
-#   "username": "user123",
-#   "password": "mypassword"
-# }
-#
-# Successful response:
-# {
-#   "message": "Login successful",
-#   "access_token": "JWT_TOKEN_HERE",
-#   "user": {
-#       "id": ...,
-#       "email": "...",
-#       "username": "...",
-#       "role": "donor" | "recipient" | "admin"
-#   }
-# }
-#
-# The frontend must store `access_token` and send it on protected routes
-# using the Authorization header:
-#   Authorization: Bearer <token>
-# ----------------------------------------------------------------------
 @auth_bp.route("/login", methods=["POST"])
 def auth_login():
     """
-    User login endpoint.
-    Returns a JWT token if the credentials are valid.
+    Login endpoint.
+    The user can log in using either their email or username.
+    If the information is correct, we return a valid JWT token.
     """
     data = request.get_json() or {}
-
     email_or_username = data.get("email") or data.get("username")
     password = data.get("password")
 
     if not email_or_username or not password:
         return jsonify({"message": "Missing credentials"}), 400
 
-    # Find user by email or username.
+    # Search for the user by email OR username
     user = User.query.filter(
         (User.email == email_or_username) | (User.username == email_or_username)
     ).first()
@@ -120,24 +82,23 @@ def auth_login():
     if not user or not user.check_password(password):
         return jsonify({"message": "Invalid credentials"}), 401
 
-    # JWT identity must be a string, so we store the user id as string.
-    identity = str(user.id)
+    if not user.is_active:
+        return jsonify({"message": "Account is deactivated"}), 403
 
-    # Additional claims can be included in the token payload if needed.
+    # Create token that includes extra information for later use
     additional_claims = {
         "role": user.role,
         "username": user.username,
     }
 
-    # Generate the access token.
-    access_token = create_access_token(
-        identity=identity,
+    token = create_access_token(
+        identity=str(user.id),
         additional_claims=additional_claims,
     )
 
     return jsonify({
         "message": "Login successful",
-        "access_token": access_token,
+        "access_token": token,
         "user": {
             "id": user.id,
             "email": user.email,
@@ -147,171 +108,120 @@ def auth_login():
     }), 200
 
 
-# ----------------------------------------------------------------------
-# ME — Get information about the currently authenticated user
-# Endpoint: GET /api/auth/me
-#
-# Requires JWT:
-#   Authorization: Bearer <token>
-#
-# Response:
-# {
-#   "message": "Current user",
-#   "user_id": "3"
-# }
-#
-# The frontend can use this endpoint to:
-#   - verify if a token is still valid,
-#   - detect the current logged-in user.
-# ----------------------------------------------------------------------
 @auth_bp.route("/me", methods=["GET"])
 @jwt_required()
 def auth_me():
     """
-    Returns the user id stored in the current JWT identity.
+    Get information about the currently logged-in user.
+    Useful for session checks.
     """
-    current_user_id = get_jwt_identity()
+    user_id = get_jwt_identity()
+    claims = get_jwt()
+
     return jsonify({
         "message": "Current user",
-        "user_id": current_user_id,
+        "user_id": user_id,
+        "role": claims.get("role"),
+        "username": claims.get("username"),
     }), 200
 
 
-# ----------------------------------------------------------------------
-# PING — Simple connectivity check for the auth blueprint
-# Endpoint: GET /api/auth/ping
-#
-# Used to verify that the authentication routes are correctly registered.
-# ----------------------------------------------------------------------
 @auth_bp.route("/ping", methods=["GET"])
 def auth_ping():
     """
-    Simple endpoint to verify that the auth blueprint is registered.
+    Very simple route to verify that the auth system is working correctly.
     """
     return jsonify({"message": "auth blueprint is working"}), 200
 
 
-# ----------------------------------------------------------------------
-# FORGOT PASSWORD — Forgot a password
-# Endpoint: POST /api/auth/forgot-password
-#
-# Expected JSON body:
-# {
-#   "email": "example@mail.com"
-# }
-#
-# Responses:
-#   201 → Created a reset password page
-#   400 → missing email or user does not exist
-# ----------------------------------------------------------------------
 @auth_bp.route("/forgot-password", methods=["POST"])
 def auth_forgot_password():
-    data = request.get_json()
+    """
+    First step of password reset.
 
+    What we do:
+    - verify the email exists
+    - generate a short-lived token (10 min)
+    - simulate sending an email with a reset link
+    """
+    data = request.get_json() or {}
     email = data.get("email")
 
-    if not email :
-        return jsonify({"message": "Missing Email"}), 400
+    if not email:
+        return jsonify({"message": "Missing email"}), 400
 
-    # Check if the email or username already exists.
-    existing_user = User.query.filter(
-        (User.email == email)
-    ).first()
-
-    if not existing_user:
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        # In real systems we don't reveal this for security reasons
         return jsonify({"message": "User does not exist"}), 400
 
     token = generate_reset_token(email)
+    reset_link = f"http://localhost:3000/reset-password/{token}"
 
-    new_password_url = f"http://localhost:3000/reset-password/{token}"
+    email_preview = send_password_reset_email(email, reset_link)
 
-    return jsonify({"message": "The Reset Password Link has been sent to your email",
-                    "reset_link": new_password_url}), 201
+    return jsonify({
+        "message": "Password reset link sent",
+        "reset_link": reset_link,
+        "email_preview": email_preview,
+    }), 201
 
-"""
-Helper function for generating a token to reset a password that lasts 10 minutes.
-"""
-def generate_reset_token(email):
+
+def generate_reset_token(email: str) -> str:
+    """
+    Generate a token for password reset.
+    It expires in 10 minutes.
+    """
     payload = {
         "email": email,
-        "type": "password_reset"
+        "type": "password_reset",
     }
-    token = create_access_token(identity=email,
-                                additional_claims=payload,
-                                expires_delta=timedelta(minutes=10))
-    return token
+
+    return create_access_token(
+        identity=email,
+        additional_claims=payload,
+        expires_delta=timedelta(minutes=10),
+    )
 
 
-# ----------------------------------------------------------------------
-# RESET PASSWORD — Reset a password
-# Endpoint: POST /api/auth/reset-password
-#
-# Expected JSON body:
-# {
-#   "password": "mypassword"
-# }
-#
-# JWT Headers:
-# {
-#   "email": "example@mail.com",
-#   "type": "password_reset"
-# }
-# Responses:
-#   200 → Password changed successfully
-#   400 → missing token or password or user does not exist
-# ----------------------------------------------------------------------
 @auth_bp.route("/reset-password", methods=["POST"])
 @jwt_required()
 def auth_reset_password():
     """
-    User registration endpoint.
-    Handles signup for donors, recipients, or admins (if needed).
+    Final step of resetting the password.
+    The token must be valid and must be of the correct type.
     """
-    data = request.get_json()
-    new_pass_info = get_jwt()
-    email = new_pass_info.get("email")
+    data = request.get_json() or {}
     new_password = data.get("password")
 
-    if not new_password :
-        return jsonify({"message": "Missing New Password"}), 400
+    if not new_password:
+        return jsonify({"message": "Missing new password"}), 400
 
+    token_info = get_jwt()
+    email = token_info.get("email")
+    token_type = token_info.get("type")
 
-    if new_pass_info.get("type") != "password_reset":
-        return jsonify({"message": "Invalid Token"}), 400
-    
-    # Check if the email or username already exists.
-    existing_user = User.query.filter(
-        (User.email == email)
-    ).first()
+    if token_type != "password_reset":
+        return jsonify({"message": "Invalid token type"}), 400
 
-    if not existing_user:
+    user = User.query.filter_by(email=email).first()
+    if not user:
         return jsonify({"message": "User does not exist"}), 400
 
-    existing_user.set_password(new_password)
-
+    user.set_password(new_password)
     db.session.commit()
 
-    return jsonify({"message": "Password Reset Successfully"}), 200
+    return jsonify({"message": "Password reset successfully"}), 200
 
-# ----------------------------------------------------------------------
-# Profile Update — Update Profile
-# Endpoint: POST /api/auth/profile/update
-#
-# Expected JSON body:
-# {
-#   "username": "username123"
-#   "email": "email@email.com"
-# }
-#
-# Responses:
-#   200 → Username/Email changed successfully
-#   400 → incorrect inputs or username/email taken already
-# ----------------------------------------------------------------------
+
 @auth_bp.route("/profile/update", methods=["PATCH"])
 @jwt_required()
 def update_user():
+    """
+    This route allows logged users to change their username or email.
+    """
     user_id = get_jwt_identity()
-    data = request.get_json()
+    data = request.get_json() or {}
 
     new_username = data.get("username")
     new_email = data.get("email")
@@ -319,23 +229,55 @@ def update_user():
     if not new_username or not new_email:
         return jsonify({"msg": "Username and email required"}), 400
 
-    # Fetch user
     user = User.query.get(user_id)
     if not user:
         return jsonify({"msg": "User not found"}), 400
 
-    # Check if username is taken by someone else
+    # Validate that no other user has this username/email
     if User.query.filter(User.username == new_username, User.id != user_id).first():
         return jsonify({"msg": "Username already in use"}), 400
 
-    # Check if email is taken by someone else
     if User.query.filter(User.email == new_email, User.id != user_id).first():
         return jsonify({"msg": "Email already in use"}), 400
-
 
     user.username = new_username
     user.email = new_email
     db.session.commit()
 
-    return jsonify({"msg": "Profile updated", 
-                    "user": {"username": user.username, "email": user.email}}), 200
+    return jsonify({
+        "msg": "Profile updated",
+        "user": {"username": user.username, "email": user.email},
+    }), 200
+
+
+@auth_bp.route("/admin/users/<int:user_id>/deactivate", methods=["PATCH"])
+@role_required(["admin"])  # only admins can deactivate users
+def admin_deactivate_user(user_id: int):
+    """
+    Used by admins to deactivate a user.
+    A deactivated user cannot log in.
+    """
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+
+    user.is_active = False
+    db.session.commit()
+
+    return jsonify({"message": "User deactivated successfully"}), 200
+
+
+@auth_bp.route("/admin/users/<int:user_id>/activate", methods=["PATCH"])
+@role_required(["admin"])
+def admin_activate_user(user_id: int):
+    """
+    Reactivate a previously deactivated user (admin only).
+    """
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+
+    user.is_active = True
+    db.session.commit()
+
+    return jsonify({"message": "User activated successfully"}), 200

@@ -1,6 +1,6 @@
-This is the backend service for the FoodLink project. The backend handles authentication (JWT-based), user roles, and donation management.
+This is the backend service for the FoodLink project. The backend handles authentication (JWT-based), user roles, and donation workflow.
 
-Technologies Used:
+## Technologies Used:
 
 | Component         | Technology               |
 | ----------------- | ------------------------ |
@@ -10,7 +10,20 @@ Technologies Used:
 | ORM               | SQLAlchemy               |
 | API Testing       | Thunder Client / Postman |
 
-SETUP INSTRUCTIONS:
+## Project Structure:
+
+backend/
+├── app.py
+├── config.py
+├── models.py
+├── auth_routes.py
+├── donation_routes.py
+├── security.py
+├── email_utils.py
+├── requirements.txt
+└── README.md
+
+## Setup Instructions:
 
 1. Clone the repository:
 
@@ -38,22 +51,22 @@ python app.py
 The API will be running at: http://127.0.0.1:5000
 
 
-Authentication Endppoints:
+## Authentication Endpoints - /api/auth/:
 
-| Method | Endpoint             | Description             | Auth Required |
-| ------ | -------------------- | ----------------------- | ------------- |
-| POST   | `/api/auth/register` | Create a new user       | ❌            |
-| POST   | `/api/auth/login`    | Login and get JWT token | ❌            |
-| GET    | `/api/auth/me`       | Get logged user info    | ✔ JWT         |
+| Method | Endpoint                            | Description                                    | Auth Required       |
+| ------ | ----------------------------------- | ---------------------------------------------- | ------------------- |
+| POST   | `/register`                         | Create a new user account                      | -                   |
+| POST   | `/login`                            | Login and receive a JWT token                  | -                   |
+| GET    | `/me`                               | Get current logged-in user information         | JWT                 |
+| POST   | `/forgot-password`                  | Request password reset link (email simulation) | -                   |
+| POST   | `/reset-password`                   | Set new password using reset token             | Reset Token (JWT)   |
+| PATCH  | `/profile/update`                   | Update email/username for current user         | JWT                 |
+| PATCH  | `/admin/users/<user_id>/deactivate` | Deactivate a user                              | Admin               |
+| PATCH  | `/admin/users/<user_id>/activate`   | Activate a user                                | Admin               |
 
+After login → Copy token and include it in Authorization header:      Authorization: Bearer <token>                 
 
-After login → Copy token and include it in Authorization header:
-
-Authorization: Bearer <token>
-
----------------------------------------------------------------------------------------
-
-Example Testing Flow (Thunder Client / Postman)
+Example Testing Flow (Thunder Client / Postman):
 
 1. Register a user
 2. Login → copy access_token
@@ -62,14 +75,49 @@ Example Testing Flow (Thunder Client / Postman)
 GET http://127.0.0.1:5000/api/auth/me
 
 
-Select Headers tab → Add:
+Select Headers tab/Add:
 
-Key	Value
-Authorization	Bearer eyJhbGciOiJI...
+Key: Authorization
+Value: Bearer eyJhbGciOiJI...
 
 If successful, you will see:
 
 {
+
   "message": "Current user",
+
   "user_id": "1"
+
 }
+
+## Donations Endpoints - /api/donations/:
+
+| Method | Endpoint                            | Role      | Description                           |
+| ------ | ----------------------------------- | --------- | ------------------------------------- |
+| POST   | `/`                                 | donor     | Create donation (pending)             |
+| GET    | `/available`                        | all auth  | List approved + non-expired donations |
+| GET    | `/pending`                          | admin     | View pending donations                |
+| POST   | `/<id>/approve`                     | admin     | Approve donation                      |
+| POST   | `/<id>/reject`                      | admin     | Reject donation                       |
+| POST   | `/<id>/claim`                       | recipient | Claim donation                        |
+| POST   | `/admin/users/<user_id>/deactivate` | admin     | Deactivate a user                     |
+
+## Password Reset Endpoints:
+
+| Método | Endpoint           | Descripción            | Token                |
+| ------ | ------------------ | ---------------------- | -------------------- |
+| POST   | `/forgot-password` | Enviar link con JWT    | -                    |
+| POST   | `/reset-password`  | Guardar nuevo password | Bearer Reset Token   |
+
+
+## Environment Variables (Optional):
+
+Create a .env file if needed:
+JWT_SECRET_KEY=your_secret_key_here
+FLASK_ENV=development
+
+## Notes:
+
+- This backend uses simulated emails (printed in console)
+- Token expiration for password reset: 10 minutes
+- SQLite database auto-generates in project folder

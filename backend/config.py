@@ -1,23 +1,32 @@
+from datetime import timedelta
+
+
 class Config:
     """
-    Main configuration class for the FoodLink backend.
-    Loaded by app.py to configure the database, JWT, and other settings.
+    Basic configuration class for the FoodLink backend.
 
-    NOTE:
-    For production, SECRET_KEY and JWT_SECRET_KEY should be stored
-    in environment variables instead of being hardcoded.
+    app.py imports this class and uses it to configure
+    the database, JWT, and other global settings.
+
+    In a real deployment these values should usually come
+    from environment variables instead of being hard-coded.
     """
 
-    # Flask secret key used for session signing and security.
+    # Secret key used internally by Flask (sessions, cookies, etc.).
+    # For production this should NOT be a fixed string.
     SECRET_KEY = "dev_secret_key"
 
-    # SQLite database URL for local development.
-    # Flask will store the SQLite file under the instance folder.
+    # Local SQLite database for development.
+    # The file "foodlink.db" will be created in the instance folder.
     SQLALCHEMY_DATABASE_URI = "sqlite:///foodlink.db"
 
-    # Disable SQLAlchemy modification tracking overhead.
+    # Turn off SQLAlchemy's event system to avoid extra overhead.
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # Secret key used to sign and validate JWT tokens.
-    # The frontend only receives the token, never this key.
+    # Secret key used to sign and verify JWT tokens.
+    # The client never sees this value, only the tokens it generates.
     JWT_SECRET_KEY = "jwt_secret_key"
+
+    # Access tokens will expire after 1 hour.
+    # You can change the number of hours or use minutes/seconds if needed.
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
