@@ -16,11 +16,13 @@ import MyDonationsPage from './pages/MyDonationsPage';
 import RequestDonationPage from './pages/RequestDonationPage';
 import FilterDonationsPage from './pages/FilterDonationsPage';
 
-import ProtectedRoute from './pages/ProtectedRoute';
+import ProtectedRoute from './components/DefinedRoutes/ProtectedRoute';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 
 // Components
 import Navbar from "./components/Navbar/Navbar";
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminRoute from './components/DefinedRoutes/AdminRoute';
 
 function App() {
   return (
@@ -40,6 +42,11 @@ function App() {
             } />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+        <Route path="/admin-dashboard" element={
+            <AdminRoute>
+            <AdminDashboardPage /> {/* Protected so can't be accessed without being logged in */}
+            </AdminRoute>
+        } />
 
           <Route 
             path="/profile" 
