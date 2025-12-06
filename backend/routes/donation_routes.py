@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from models import db, Donation
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request, get_jwt
+from functools import wraps
 
 # Blueprint for donation-related routes.
 # Registered in app.py with URL prefix: /api/donations
@@ -112,8 +113,8 @@ def get_available_donations():
     List all donations that are not rejected.
     This endpoint is public.
     """
-    donations = Donation.query.filter(Donation.status != "rejected").all()
-
+    donations = Donation.query.filter(Donation.status== "approved").all()
+    #CHANGED FROM NOT REJECTED TO ONLY APPROVED
     result = []
     for d in donations:
         result.append({
@@ -178,3 +179,111 @@ def get_my_donations():
         })
 
     return jsonify(result), 200
+
+
+def admin_required(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        verify_jwt_in_request() 
+        claims = get_jwt()
+
+        if claims.get("role") != "admin":
+            return jsonify(msg="Admins only"), 403
+        
+        return fn(*args, **kwargs)
+
+    return wrapper
+
+# ----------------------------------------------------------------------
+# LIST PENDING DONATIONS
+# Endpoint: GET /api/donations/admin/pending
+#
+# PROTECTED route → requires JWT token
+# ADMIN route → requires admin role
+# Header:
+#   Authorization: Bearer <token>
+#
+# Returns all donations that are pending.
+#
+# Response (example):
+# [
+#   {
+#     "id": 1,
+#     "title": "Food box",
+#     "description": "Includes rice and beans",
+#     "category": "non_perishable",
+#     "quantity": 4,
+#     "status": "pending"
+#   },
+#   ...
+# ]
+# ----------------------------------------------------------------------
+@donation_bp.route("/admin/pending", methods=["GET"])
+@jwt_required()
+@admin_required
+def get_pending_donations():
+    """
+    List all donations belonging to the currently authenticated user.
+    """
+    current_user_id = get_jwt_identity()
+
+    donations = Donation.query.filter_by(status="pending").all()
+
+    result = []
+    for d in donations:
+        result.append({
+            "id": d.id,
+            "title": d.title,
+            "description": d.description,
+            "category": d.category,
+            "quantity": d.quantity,
+            "status": d.status,
+        })
+
+    return jsonify(result), 200
+
+# ----------------------------------------------------------------------
+# ACCEPT DONATION
+# Endpoint: GET /api/donations/admin/donation.id/approve
+#
+# PROTECTED route → requires JWT token
+# ADMIN route → requires admin role
+# Header:
+#   Authorization: Bearer <token>
+#
+# Approves donation
+# ----------------------------------------------------------------------
+@donation_bp.route("/admin/<int:donation_id>/approve", methods=["PATCH"])
+@jwt_required()
+@admin_required
+def approve_donation(donation_id):
+    """
+    List all donations belonging to the currently authenticated user.
+    """
+    donation = Donation.query.get_or_404(donation_id)
+    donation.status = "approved"
+    db.session.commit()
+    return jsonify({"message": "Donation Approved"}), 200
+
+# ----------------------------------------------------------------------
+# ACCEPT DONATION
+# Endpoint: GET /api/donations/admin/donation.id/reject
+#
+# PROTECTED route → requires JWT token
+# ADMIN route → requires admin role
+# Header:
+#   Authorization: Bearer <token>
+#
+# Rejects donation
+# ----------------------------------------------------------------------
+@donation_bp.route("/admin/<int:donation_id>/reject", methods=["PATCH"])
+@jwt_required()
+@admin_required
+def reject_donation(donation_id):
+    """
+    List all donations belonging to the currently authenticated user.
+    """
+    donation = Donation.query.get_or_404(donation_id)
+    donation.status = "rejected"
+    db.session.commit()
+    return jsonify({"message": "Donation rejected"}), 200

@@ -50,6 +50,7 @@ export default function Navbar() {
             {role === "admin" && (
               <>
                 <li><Link to="/available-donations">Available</Link></li>
+                <li><Link to="/admin-dashboard">Admin Dashboard</Link></li>
                 {/* Later add admin features */}
               </>
             )}
