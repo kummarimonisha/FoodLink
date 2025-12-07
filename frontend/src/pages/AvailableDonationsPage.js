@@ -28,7 +28,7 @@ export default function AvailableDonationsPage() {
 
   function requestItem(id) {
     axios
-      .patch(
+      .post(
         `http://localhost:5000/api/donations/${id}/claim`,
         {},
         {

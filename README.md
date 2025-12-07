@@ -42,22 +42,23 @@ By: Blaudschun Beauvoir, Deylis Cano Morera, Monisha Kummari, & Akul Singh
 - Go to *My Donations* and you should now see the donation is pending.
 
 ## Semi-Implemented Features
-- Claim donations by Recipients
-    - Implemented on Back-end, needs to be done on Front-end
-    - Involves listing available donations to recipients.
-    - Let the recipient claim a donation.
-    - Updates Database/Donation data.
-    - Updates Available Donation page.
-    - Gives a confirmation of Accepted Donation.
+- Request
+    - Currently works by just letting recipients claim donations and we have a empty Requests page for now.
+    - Requires an entire new model inside the database
+    - Lets users request for certain foods that are not listed in donations
+    - Donators should be able to see and donate for it.
+        - Need to account for it donators can only send partial parts of it.
+        - Negotiating if they have a different type.
 
 ## To Do Features
 - Set-up an email service to properly send emails for registration.
 - Messages between Donors and Recipients.
 - Re-activate users.
 - Send notifications for accepted/rejected donations.
-- Let recipients see a history of their accepted donations.
+- Let recipients see a history of their claimed donations.
 - Tracking donations.
 - Recipients can request anything rather than looking through only available donations.
+- Location based availability.
 
 # Paper
 - Please find the paper covering the FoodLink app in the `docs` folder.

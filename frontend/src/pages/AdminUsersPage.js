@@ -82,22 +82,24 @@ export default function AdminUsersPage() {
                 <th style={{ textAlign: "left", padding: "8px", borderBottom: "1px solid #ddd" }}>Username</th>
                 <th style={{ textAlign: "left", padding: "8px", borderBottom: "1px solid #ddd" }}>Email</th>
                 <th style={{ textAlign: "left", padding: "8px", borderBottom: "1px solid #ddd" }}>Role</th>
+                <th style={{ textAlign: "left", padding: "8px", borderBottom: "1px solid #ddd" }}>Status</th>
                 <th style={{ textAlign: "left", padding: "8px", borderBottom: "1px solid #ddd" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={4} style={{ padding: 12 }}>No users found.</td>
+                  <td colSpan={5} style={{ padding: 12 }}>No users found.</td>
                 </tr>
               )}
 
               {users.map((u) => (
                 <tr key={u.id || u.email}>
-                  <td style={{ padding: 8, borderBottom: "1px solid #f2f2f2" }}>{u.username}</td>
-                  <td style={{ padding: 8, borderBottom: "1px solid #f2f2f2" }}>{u.email}</td>
-                  <td style={{ padding: 8, borderBottom: "1px solid #f2f2f2" }}>{u.role}</td>
-                  <td style={{ padding: 8, borderBottom: "1px solid #f2f2f2" }}>
+                  <td style={{textAlign: "left",  padding: 8, borderBottom: "1px solid #f2f2f2" }}>{u.username}</td>
+                  <td style={{textAlign: "left",  padding: 8, borderBottom: "1px solid #f2f2f2" }}>{u.email}</td>
+                  <td style={{textAlign: "left",  padding: 8, borderBottom: "1px solid #f2f2f2" }}>{u.role}</td>
+                  <td style={{textAlign: "left",  padding: 8, borderBottom: "1px solid #f2f2f2" }}>{u.is_active ? "Active" : "Inactive"}</td>
+                  <td style={{textAlign: "left",  padding: 8, borderBottom: "1px solid #f2f2f2" }}>
                     <button
                       onClick={() => handleDeactivate(u.id)}
                       disabled={deactivatingId === u.id}
