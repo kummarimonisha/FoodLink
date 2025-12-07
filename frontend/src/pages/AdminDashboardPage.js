@@ -54,7 +54,7 @@ export default function AdminDashboard() {
         <div key={item.id} className="item-box">
           <h3>{item.title}</h3>
           <p>{item.description}</p>
-          <p>Price: ${item.price}</p>
+          <p>Expiry: ${item.expiry}</p>
 
           <button onClick={() => approve(item.id)}>Approve</button>
           <button onClick={() => reject(item.id)}>Reject</button>
