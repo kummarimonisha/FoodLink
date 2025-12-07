@@ -9,10 +9,21 @@ export default function AvailableDonationsPage() {
   const role = localStorage.getItem("role");
 
   useEffect(() => {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
     axios
-      .get("http://localhost:5000/api/donations/available")
-      .then((res) => setItems(res.data))
-      .catch(() => setMessage("Failed to load available donations."));
+      .get("http://localhost:5000/api/donations/available", { headers })
+      .then((res) => {
+        if (Array.isArray(res.data)) setItems(res.data);
+        else {
+          console.error('Unexpected response for available donations:', res.data);
+          setMessage("Failed to load available donations.");
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching available donations:', err.response || err.message || err);
+        setMessage("Failed to load available donations.");
+      });
   }, []);
 
   function requestItem(id) {

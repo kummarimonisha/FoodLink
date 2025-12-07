@@ -11,11 +11,11 @@ export default function AdminUsersPage() {
     setLoading(true);
     setError("");
 
-    fetch("http://localhost:5000/api/admin/users", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
+    // auth blueprint is mounted at /api/auth on the backend
+    const url = "http://localhost:5000/api/auth/admin/users";
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    fetch(url, { headers })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -45,11 +45,11 @@ export default function AdminUsersPage() {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/admin/users/${userId}/deactivate`,
+        `http://localhost:5000/api/auth/admin/users/${userId}/deactivate`,
         {
           method: "PATCH",
           headers: {
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
             "Content-Type": "application/json",
           },
         }

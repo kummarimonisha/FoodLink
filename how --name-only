@@ -1,0 +1,181 @@
+[33mcommit 7cdba099786c11655d61446f76630f79b40d0207[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: kummarimonisha <kummarimonisha@gmail.com>
+Date:   Sat Dec 6 20:07:24 2025 -0500
+
+    My current frontend changes
+
+[1mdiff --git a/backend/routes/auth_routes.py b/backend/routes/auth_routes.py[m
+[1mindex 217cecd..93ebd01 100644[m
+[1m--- a/backend/routes/auth_routes.py[m
+[1m+++ b/backend/routes/auth_routes.py[m
+[36m@@ -250,6 +250,27 @@[m [mdef update_user():[m
+     }), 200[m
+ [m
+ [m
+[32m+[m[32m@auth_bp.route("/admin/users", methods=["GET"])[m[41m[m
+[32m+[m[32m@role_required(["admin"])[m[41m[m
+[32m+[m[32mdef admin_get_users():[m[41m[m
+[32m+[m[32m    """[m[41m[m
+[32m+[m[32m    Admin endpoint to list all users.[m[41m[m
+[32m+[m[32m    Returns user id, username, email, and role.[m[41m[m
+[32m+[m[32m    """[m[41m[m
+[32m+[m[32m    users = User.query.all()[m[41m[m
+[32m+[m[32m    user_list = [[m[41m[m
+[32m+[m[32m        {[m[41m[m
+[32m+[m[32m            "id": user.id,[m[41m[m
+[32m+[m[32m            "username": user.username,[m[41m[m
+[32m+[m[32m            "email": user.email,[m[41m[m
+[32m+[m[32m            "role": user.role,[m[41m[m
+[32m+[m[32m            "is_active": user.is_active,[m[41m[m
+[32m+[m[32m        }[m[41m[m
+[32m+[m[32m        for user in users[m[41m[m
+[32m+[m[32m    ][m[41m[m
+[32m+[m[32m    return jsonify(user_list), 200[m[41m[m
+[32m+[m[41m[m
+[32m+[m[41m[m
+ @auth_bp.route("/admin/users/<int:user_id>/deactivate", methods=["PATCH"])[m
+ @role_required(["admin"])  # only admins can deactivate users[m
+ def admin_deactivate_user(user_id: int):[m
+[1mdiff --git a/frontend/src/App.js b/frontend/src/App.js[m
+[1mindex f160427..bdaa6ac 100644[m
+[1m--- a/frontend/src/App.js[m
+[1m+++ b/frontend/src/App.js[m
+[36m@@ -1,28 +1,33 @@[m
+[31m-import React from 'react'; [m
+[31m-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';[m
+[31m-import './App.css';[m
+[32m+[m[32mimport React from "react";[m
+[32m+[m[32mimport { BrowserRouter as Router, Route, Routes } from "react-router-dom";[m
+[32m+[m[32mimport "./App.css";[m
+ [m
+ // Pages[m
+[31m-import HomePage from './pages/HomePage';[m
+[31m-import LoginPage from './pages/LoginPage';[m
+[31m-import RegisterPage from './pages/RegisterPage';[m
+[31m-import ProfilePage from './pages/ProfilePage';[m
+[31m-import EditProfilePage from './pages/EditProfilePage';[m
+[31m-import ForgotPasswordPage from './pages/ForgotPasswordPage';[m
+[31m-[m
+[31m-import CreateDonationPage from './pages/CreateDonationPage';[m
+[31m-import AvailableDonationsPage from './pages/AvailableDonationsPage';[m
+[31m-import MyDonationsPage from './pages/MyDonationsPage';[m
+[31m-import RequestDonationPage from './pages/RequestDonationPage';[m
+[31m-import FilterDonationsPage from './pages/FilterDonationsPage';[m
+[31m-[m
+[31m-import ProtectedRoute from './components/DefinedRoutes/ProtectedRoute';[m
+[31m-import ResetPasswordPage from './pages/ResetPasswordPage';[m
+[32m+[m[32mimport HomePage from "./pages/HomePage";[m
+[32m+[m[32mimport LoginPage from "./pages/LoginPage";[m
+[32m+[m[32mimport RegisterPage from "./pages/RegisterPage";[m
+[32m+[m[32mimport ProfilePage from "./pages/ProfilePage";[m
+[32m+[m[32mimport EditProfilePage from "./pages/EditProfilePage";[m
+[32m+[m[32mimport ForgotPasswordPage from "./pages/ForgotPasswordPage";[m
+[32m+[m[32mimport ResetPasswordPage from "./pages/ResetPasswordPage";[m
+[32m+[m
+[32m+[m[32mimport CreateDonationPage from "./pages/CreateDonationPage";[m
+[32m+[m[32mimport AvailableDonationsPage from "./pages/AvailableDonationsPage";[m
+[32m+[m[32mimport MyDonationsPage from "./pages/MyDonationsPage";[m
+[32m+[m[32mimport EditDonationPage from "./pages/EditDonationPage";   // ⭐ NEW[m
+[32m+[m[32mimport RequestDonationPage from "./pages/RequestDonationPage";[m
+[32m+[m[32mimport FilterDonationsPage from "./pages/FilterDonationsPage";[m
+[32m+[m
+[32m+[m[32mimport AdminDashboardPage from "./pages/AdminDashboardPage";[m
+[32m+[m[32mimport RequestsPage from "./pages/RequestsPage";[m
+[32m+[m[32mimport AdminUsersPage from "./pages/AdminUsersPage";[m
+[32m+[m
+[32m+[m[32m// Routes[m
+[32m+[m[32mimport ProtectedRoute from "./components/DefinedRoutes/ProtectedRoute";[m
+[32m+[m[32mimport AdminRoute from "./components/DefinedRoutes/AdminRoute";[m
+ [m
+ // Components[m
+ import Navbar from "./components/Navbar/Navbar";[m
+[31m-import AdminDashboardPage from './pages/AdminDashboardPage';[m
+[31m-import AdminRoute from './components/DefinedRoutes/AdminRoute';[m
+ [m
+ function App() {[m
+   return ([m
+[36m@@ -31,72 +36,95 @@[m [mfunction App() {[m
+         <Navbar />[m
+ [m
+         <Routes>[m
+[31m-          {/* Routes*/}[m
+[32m+[m[32m          {/* ---------------------- PUBLIC ROUTES ---------------------- */}[m
+           <Route path="/" element={<HomePage />} />[m
+           <Route path="/login" element={<LoginPage />} />[m
+           <Route path="/register" element={<RegisterPage />} />[m
+[31m-          <Route path="/profile" element={[m
+[31m-            <ProtectedRoute>[m
+[31m-            <ProfilePage /> {/* Protected so can't be accessed without being logged in */}[m
+[31m-            </ProtectedRoute>[m
+[31m-            } />[m
+[31m-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />[m
+[31m-        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />[m
+[31m-        <Route path="/admin-dashboard" element={[m
+[31m-            <AdminRoute>[m
+[31m-            <AdminDashboardPage /> {/* Protected so can't be accessed without being logged in */}[m
+[31m-            </AdminRoute>[m
+[31m-        } />[m
+[31m-[m
+[31m-          <Route [m
+[31m-            path="/profile" [m
+[32m+[m[32m          <Route path="/forgot-password" element={<ForgotPasswordPage />} />[m
+[32m+[m[32m          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />[m
+[32m+[m
+[32m+[m[32m          {/* ---------------------- PROTECTED ROUTES ---------------------- */}[m
+[32m+[m[32m          <Route[m
+[32m+[m[32m            path="/profile"[m
+             element={[m
+               <ProtectedRoute>[m
+                 <ProfilePage />[m
+               </ProtectedRoute>[m
+[31m-            } [m
+[32m+[m[32m            }[m
+           />[m
+ [m
+[31m-          <Route [m
+[31m-            path="/profile/edit" [m
+[32m+[m[32m          <Route[m
+[32m+[m[32m            path="/profile/edit"[m
+             element={[m
+               <ProtectedRoute>[m
+                 <EditProfilePage />[m
+               </ProtectedRoute>[m
+[31m-            } [m
+[32m+[m[32m            }[m
+           />[m
+ [m
+[31m-          <Route [m
+[31m-            path="/create-donation" [m
+[32m+[m[32m          <Route[m
+[32m+[m[32m            path="/create-donation"[m
+             element={[m
+               <ProtectedRoute>[m
+                 <CreateDonationPage />[m
+               </ProtectedRoute>[m
+[31m-            } [m
+[32m+[m[32m            }[m
+           />[m
+ [m
+[31m-          <Route [m
+[31m-            path="/my-donations" [m
+[32m+[m[32m          <Route[m
+[32m+[m[32m            path="/my-donations"[m
+             element={[m
+               <ProtectedRoute>[m
+                 <MyDonationsPage />[m
+               </ProtectedRoute>[m
+[31m-            } [m
+[32m+[m[32m            }[m
+           />[m
+ [m
+[31m-          <Route [m
+[31m-            path="/available-donations" [m
+[31m-            element={<AvailableDonationsPage />} [m
+[32m+[m[32m          {/* ⭐ NEW: Edit Donation Page */}[m
+[32m+[m[32m          <Route[m
+[32m+[m[32m            path="/edit-donation/:id"[m
+[32m+[m[32m            element={[m
+[32m+[m[32m              <ProtectedRoute>[m
+[32m+[m[32m                <EditDonationPage />[m
+[32m+[m[32m              </ProtectedRoute>[m
+[32m+[m[32m     
