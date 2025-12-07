@@ -1,8 +1,13 @@
 Guide for running the Project
 
-1. First make sure you have the backend libraries installed to run the backend, do this by making sure you're installed
+1. First make sure you have Python and Node.js installed in order to run both the Back-end and Front-end components.
+2. Then you need to make sure you have the Back-end libraries installed to run the backend, do this by making sure your terminal is in
 the backend folder ("cd backend"), then run "pip install -r requirements.txt"
 2. To run the backend simply make sure you are in backend folder and run "flask run"
 3. To launch frontend, use a separate terminal while backend is running, go to frontend folder in this one ("cd frontend")
 4. To run the frontend, simply make sure you are in the frontend folder and run "npm start"
-5. Now yuo can go to http://localhost:3000/ to access the site
+5. Now you can go to http://localhost:3000/ to access the site
+
+Please note that if you are having issues during setup, it is generally a CORS issue such as Mac having strict policies with it,
+possibly requiring you to enable developers tools to run it, or you might have something blocking the ports as the back-end runs on
+port 5000 and the front-end on port 3000.
