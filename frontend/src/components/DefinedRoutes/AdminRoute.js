@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Navigate } from "react-router-dom";
 
-export default function ProtectedRoute({ children }) {
+export default function AdminRoute({ children }) {
   const token = localStorage.getItem("access_token");
   const alerted = useRef(false);
   const role = localStorage.getItem("role");

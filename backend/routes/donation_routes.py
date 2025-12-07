@@ -267,6 +267,41 @@ def get_available_donations():
 
     return jsonify(result), 200
 
+
+# ----------------------------------------------------------
+# X) Donor: List my donations
+#    GET /api/donations/mine
+# ----------------------------------------------------------
+@donation_bp.get("/mine")
+@jwt_required()
+def get_my_donations():
+    """
+    Return donations created by the currently authenticated donor.
+    """
+    user = get_current_user()
+    if not require_role(user, ["donor", "admin"]):
+        return jsonify({"message": "Not authorized"}), 403
+
+    donations = Donation.query.filter_by(donor_id=user.id).order_by(
+        Donation.created_at.desc()
+    ).all()
+
+    result = []
+    for d in donations:
+        result.append({
+            "id": d.id,
+            "title": d.title,
+            "description": d.description,
+            "category": d.category,
+            "quantity": d.quantity,
+            "status": d.status,
+            "expiration_date": d.expiration_date.isoformat() if d.expiration_date else None,
+            "donor_id": d.donor_id,
+        })
+
+    return jsonify(result), 200
+
+
 # ----------------------------------------------------------
 # 4) Admin view: see pending donations
 #    GET /api/donations/pending

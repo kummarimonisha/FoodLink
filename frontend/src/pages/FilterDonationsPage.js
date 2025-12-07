@@ -6,11 +6,27 @@ export default function FilterDonationsPage() {
   const [category, setCategory] = useState("all");
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/donations/available")
+    const token = localStorage.getItem("access_token");
+    fetch("http://localhost:5000/api/donations/available", {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
       .then((res) => res.json())
       .then((data) => {
-        setDonations(data);
-        setFiltered(data);
+        // Ensure we only use array responses
+        if (Array.isArray(data)) {
+          setDonations(data);
+          setFiltered(data);
+        } else {
+          // Backend may return an error object like { message: 'Not authorized' }
+          console.error("Unexpected response for available donations:", data);
+          setDonations([]);
+          setFiltered([]);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to fetch donations:", err);
+        setDonations([]);
+        setFiltered([]);
       });
   }, []);
 
