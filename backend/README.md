@@ -92,15 +92,16 @@ If successful, you will see:
 
 ## Donations Endpoints - /api/donations/:
 
-| Method | Endpoint                            | Role      | Description                           |
-| ------ | ----------------------------------- | --------- | ------------------------------------- |
-| POST   | `/`                                 | donor     | Create donation (pending)             |
-| GET    | `/available`                        | all auth  | List approved + non-expired donations |
-| GET    | `/pending`                          | admin     | View pending donations                |
-| POST   | `/<id>/approve`                     | admin     | Approve donation                      |
-| POST   | `/<id>/reject`                      | admin     | Reject donation                       |
-| POST   | `/<id>/claim`                       | recipient | Claim donation                        |
-| POST   | `/admin/users/<user_id>/deactivate` | admin     | Deactivate a user                     |
+| Method | Endpoint                            | Role        | Description                                                    |
+| ------ | ----------------------------------- | ------------| ---------------------------------------------------------------|
+| POST   | `/`                                 | donor       | Create donation (pending)                                      |
+| GET    | `/available`                        | all auth    | List approved + non-expired donations (supports category)      |
+| GET    | `/pending`                          | admin       | View pending donations                                         |
+| POST   | `/<id>/approve`                     | admin       | Approve donation                                               |
+| POST   | `/<id>/reject`                      | admin       | Reject donation                                                |
+| POST   | `/<id>/claim`                       | recipient   | Claim donation                                                 |
+| POST   | `/admin/users/<user_id>/deactivate` | admin       | Deactivate a user                                              |
+| PATCH  | `/api/donations/<id>`               | donor/admin | Edit a pending donation (creator or admin only)                |
 
 ## Password Reset Endpoints:
 
