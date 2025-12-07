@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from datetime import datetime
+from datetime import datetime, timezone
 
 from models import db, User, Donation
 
@@ -214,7 +214,7 @@ def get_available_donations():
     if not require_role(user, ["recipient", "donor", "admin"]):
         return jsonify({"message": "Not authorized"}), 403
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     # Base query: only approved and not expired donations
     query = Donation.query.filter(
@@ -451,7 +451,7 @@ def approve_donation(donation_id):
     if donation.status != "pending":
         return jsonify({"message": "Donation is not pending"}), 400
 
-    if donation.expiration_date and donation.expiration_date < datetime.utcnow():
+    if donation.expiration_date and donation.expiration_date < datetime.now(timezone.utc):
         donation.status = "expired"
         db.session.commit()
         return jsonify({"message": "Donation already expired"}), 400

@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # Global SQLAlchemy database object used across the whole application
@@ -39,7 +39,7 @@ class User(db.Model):
     is_active = db.Column(db.Boolean, default=True)
 
     # When the user account was created (stored automatically).
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
 
     # ------------------------------
     # Password helpers
@@ -93,7 +93,7 @@ class Donation(db.Model):
     status = db.Column(db.String(20), default="pending")
 
     # Timestamp when the donation was first created
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     # Link to the donor user that created this donation
     donor_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
@@ -114,5 +114,5 @@ class Donation(db.Model):
         """
         return (
             self.expiration_date is not None
-            and self.expiration_date < datetime.utcnow()
+            and self.expiration_date < datetime.now(timezone.utc)
         )
