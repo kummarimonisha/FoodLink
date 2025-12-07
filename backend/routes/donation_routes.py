@@ -109,7 +109,91 @@ def create_donation():
 
 
 # ----------------------------------------------------------
-# 2) List available donations (approved + not expired)
+# 2) Edit a donation (Only donor owner or admin)
+#    PATCH /api/donations/<id>
+# ----------------------------------------------------------
+@donation_bp.patch("/<int:donation_id>")
+@jwt_required()
+def update_donation(donation_id):
+    """
+    Edit an existing donation.
+
+    Rules:
+    - Only the original donor or an admin can edit a donation.
+    - Only donations in 'pending' status can be edited.
+    - Fields are optional; only provided fields will be updated.
+    """
+    current_user = get_current_user()
+    if not require_role(current_user, ["donor", "admin"]):
+        return jsonify({"message": "Only donors or admins can edit donations"}), 403
+
+    donation = Donation.query.get_or_404(donation_id)
+
+    # Only the donor who created it OR an admin can edit
+    if current_user.role != "admin" and donation.donor_id != current_user.id:
+        return jsonify({"message": "You are not allowed to edit this donation"}), 403
+
+    # Do not allow editing if the donation is no longer pending
+    if donation.status != "pending":
+        return jsonify({"message": "Only pending donations can be edited"}), 400
+
+    data = request.get_json() or {}
+
+    title = data.get("title")
+    description = data.get("description")
+    category = data.get("category")
+    quantity = data.get("quantity")
+    expiration_date_str = data.get("expiration_date")
+
+    # Optional updates: only override if a field is present in the request
+    if title is not None:
+        donation.title = title
+
+    if description is not None:
+        donation.description = description
+
+    if category is not None:
+        donation.category = category
+
+    if quantity is not None:
+        try:
+            donation.quantity = int(quantity)
+        except ValueError:
+            return jsonify({"message": "quantity must be an integer"}), 400
+
+    if expiration_date_str is not None:
+        if expiration_date_str == "":
+            # Allow clearing expiration date if empty string is sent
+            donation.expiration_date = None
+        else:
+            try:
+                donation.expiration_date = datetime.fromisoformat(expiration_date_str)
+            except ValueError:
+                return jsonify({"message": "Invalid expiration_date format (use ISO)"}), 400
+
+    db.session.commit()
+
+    return jsonify(
+        {
+            "message": "Donation updated successfully",
+            "donation": {
+                "id": donation.id,
+                "title": donation.title,
+                "description": donation.description,
+                "category": donation.category,
+                "quantity": donation.quantity,
+                "status": donation.status,
+                "expiration_date": donation.expiration_date.isoformat()
+                if donation.expiration_date
+                else None,
+                "donor_id": donation.donor_id,
+            },
+        }
+    ), 200
+
+
+# ----------------------------------------------------------
+# 3) List available donations (approved + not expired)
 #    GET /api/donations/available
 # ----------------------------------------------------------
 @donation_bp.get("/available")
@@ -150,7 +234,7 @@ def get_available_donations():
 
 
 # ----------------------------------------------------------
-# 3) Admin view: see pending donations
+# 4) Admin view: see pending donations
 #    GET /api/donations/pending
 # ----------------------------------------------------------
 @donation_bp.get("/pending")
@@ -183,7 +267,7 @@ def get_pending_donations():
 
 
 # ----------------------------------------------------------
-# 4) Admin: Reject donation
+# 5) Admin: Reject donation
 #    POST /api/donations/<id>/reject
 # ----------------------------------------------------------
 @donation_bp.post("/<int:donation_id>/reject")
@@ -208,7 +292,7 @@ def reject_donation(donation_id):
 
 
 # ----------------------------------------------------------
-# 5) Recipient: Claim donation
+# 6) Recipient: Claim donation
 #    POST /api/donations/<id>/claim
 # ----------------------------------------------------------
 @donation_bp.post("/<int:donation_id>/claim")
@@ -228,15 +312,17 @@ def claim_donation(donation_id):
 
     donation = Donation.query.get_or_404(donation_id)
 
+    # 1) Check for expiration
     if donation.is_expired:
         donation.status = "expired"
         db.session.commit()
         return jsonify({"message": "Donation expired"}), 400
 
-    # Ensure donation is still available (approved and not claimed)
+    # 2) Ensure donation is still available (approved and not claimed)
     if donation.status != "approved" or donation.allocated_to_id is not None:
         return jsonify({"message": "Donation is not available for claiming"}), 400
 
+    # 3) Allocate to the first recipient that arrives
     donation.status = "allocated"
     donation.allocated_to_id = user.id
     db.session.commit()
@@ -249,7 +335,7 @@ def claim_donation(donation_id):
 
 
 # ----------------------------------------------------------
-# 6) Admin: Deactivate a user
+# 7) Admin: Deactivate a user
 #    POST /api/donations/admin/users/<user_id>/deactivate
 # ----------------------------------------------------------
 @donation_bp.post("/admin/users/<int:user_id>/deactivate")
@@ -275,7 +361,7 @@ def deactivate_user(user_id):
 
 
 # ----------------------------------------------------------
-# 7) Admin: Approve donation
+# 8) Admin: Approve donation
 #    POST /api/donations/<id>/approve
 # ----------------------------------------------------------
 @donation_bp.post("/<int:donation_id>/approve")
