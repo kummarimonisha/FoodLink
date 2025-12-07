@@ -4,26 +4,26 @@ export default function AdminDashboard() {
   const [items, setItems] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/donations/admin/pending", {
+    fetch("http://localhost:5000/api/donations/pending", {
       headers: {
         Authorization: "Bearer " + localStorage.getItem("access_token"),
       },
     })
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error("Failed to fetch donations");
-      }
-      return res.json();
-    })
-    .then((data) => {
-      setItems(data); 
-    })
-    .catch((err) => console.error(err));
-}, []);
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Failed to fetch donations");
+        }
+        return res.json();
+      })
+      .then((data) => {
+        setItems(data);
+      })
+      .catch((err) => console.error(err));
+  }, []);
 
   function approve(id) {
-    fetch(`http://localhost:5000/api/donations/admin/${id}/approve`, {
-      method: "PATCH",
+    fetch(`http://localhost:5000/api/donations/${id}/approve`, {
+      method: "POST",
       headers: {
         Authorization: "Bearer " + localStorage.getItem("access_token"),
       },
@@ -33,8 +33,8 @@ export default function AdminDashboard() {
   }
 
   function reject(id) {
-    fetch(`http://localhost:5000/api/donations/admin/${id}/reject`, {
-      method: "PATCH",
+    fetch(`http://localhost:5000/api/donations/${id}/reject`, {
+      method: "POST",
       headers: {
         Authorization: "Bearer " + localStorage.getItem("access_token"),
       },

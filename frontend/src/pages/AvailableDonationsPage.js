@@ -1,50 +1,61 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import axios from "axios";
 
 export default function AvailableDonationsPage() {
-  const [donations, setDonations] = useState([]);
+  const [items, setItems] = useState([]);
+  const [message, setMessage] = useState("");
+
+  const token = localStorage.getItem("access_token");
+  const role = localStorage.getItem("role");
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/donations/available")
-      .then((res) => res.json())
-      .then((data) => setDonations(data))
-      .catch((err) => console.error(err));
+    axios
+      .get("http://localhost:5000/api/donations/available")
+      .then((res) => setItems(res.data))
+      .catch(() => setMessage("Failed to load available donations."));
   }, []);
 
+  function requestItem(id) {
+    axios
+      .patch(
+        `http://localhost:5000/api/donations/${id}/claim`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+      .then(() => {
+        setMessage("You successfully requested this item! 🎉");
+        setItems((prev) => prev.filter((item) => item.id !== id));
+      })
+      .catch(() => {
+        setMessage("Someone else already claimed this item.");
+      });
+  }
+
   return (
-    <div className="card">
+    <div className="page-container">
       <h2>Available Donations</h2>
 
-      {donations.length === 0 ? (
-        <p>No donations available right now.</p>
+      {message && <p className="info-msg">{message}</p>}
+
+      {items.length === 0 ? (
+        <p>No items available right now.</p>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {donations.map((d) => (
-            <li
-              key={d.id}
-              style={{
-                background: "#fff",
-                padding: "15px",
-                borderRadius: "10px",
-                marginBottom: "15px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-              }}
-            >
-              <Link to={`/donation/${d.id}`} style={{ fontSize: "18px", fontWeight: "600" }}>
-                {d.title}
-              </Link>
+        items.map((item) => (
+          <div key={item.id} className="item-box">
+            <h3>{item.title}</h3>
+            <p>{item.description}</p>
+            <p>Quantity: {item.quantity}</p>
+            <p>Expires: {item.expiration_date}</p>
 
-              <p>{d.description}</p>
-              <p><strong>Category:</strong> {d.category}</p>
-              <p><strong>Quantity:</strong> {d.quantity}</p>
-              <p><strong>Status:</strong> {d.status}</p>
-
-              <Link to={`/donation/${d.id}`}>
-                <button className="btn btn-primary">View / Request</button>
-              </Link>
-            </li>
-          ))}
-        </ul>
+            {role === "recipient" && (
+              <button className="btn-primary" onClick={() => requestItem(item.id)}>
+                Request Item
+              </button>
+            )}
+          </div>
+        ))
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { Link } from "react-router-dom";
 
 export default function MyDonationsPage() {
   const [donations, setDonations] = useState([]);
@@ -36,6 +37,22 @@ export default function MyDonationsPage() {
               <p>{d.description}</p>
               <p>Quantity: {d.quantity}</p>
               <p>Status: {d.status}</p>
+
+              {/* Edit Button */}
+              <Link 
+                to={`/edit-donation/${d.id}`}
+                className="btn btn-secondary"
+                style={{
+                  marginTop: "10px",
+                  display: "inline-block",
+                  background: "#4CAF50",
+                  padding: "8px 12px",
+                  borderRadius: "6px",
+                  color: "white"
+                }}
+              >
+                Edit Donation
+              </Link>
             </li>
           ))}
         </ul>

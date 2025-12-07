@@ -25,7 +25,6 @@ export default function Navbar() {
 
         {!token && (
           <>
-            {/* Otherwise show Login and Register Buttons */}
             <li><Link to="/login">Login</Link></li>
             <li><Link to="/register">Register</Link></li>
           </>
@@ -33,6 +32,7 @@ export default function Navbar() {
 
         {token && (
           <>
+            {/* Donor links */}
             {role === "donor" && (
               <>
                 <li><Link to="/create-donation">Create Donation</Link></li>
@@ -40,6 +40,7 @@ export default function Navbar() {
               </>
             )}
 
+            {/* Recipient links */}
             {role === "recipient" && (
               <>
                 <li><Link to="/available-donations">Available</Link></li>
@@ -47,15 +48,20 @@ export default function Navbar() {
               </>
             )}
 
+            {/* Admin links */}
             {role === "admin" && (
               <>
                 <li><Link to="/available-donations">Available</Link></li>
+                <li><Link to="/admin-users">Manage Users</Link></li>
                 <li><Link to="/admin-dashboard">Admin Dashboard</Link></li>
-                {/* Later add admin features */}
               </>
             )}
 
+            {/* NEW Requests tab (for demo purposes) */}
+            <li><Link to="/requests">Requests</Link></li>
+
             <li><Link to="/profile">Profile</Link></li>
+
             <li>
               <button onClick={logout} className="logout-btn">Logout</button>
             </li>

@@ -250,6 +250,27 @@ def update_user():
     }), 200
 
 
+@auth_bp.route("/admin/users", methods=["GET"])
+@role_required(["admin"])
+def admin_get_users():
+    """
+    Admin endpoint to list all users.
+    Returns user id, username, email, and role.
+    """
+    users = User.query.all()
+    user_list = [
+        {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": user.role,
+            "is_active": user.is_active,
+        }
+        for user in users
+    ]
+    return jsonify(user_list), 200
+
+
 @auth_bp.route("/admin/users/<int:user_id>/deactivate", methods=["PATCH"])
 @role_required(["admin"])  # only admins can deactivate users
 def admin_deactivate_user(user_id: int):
