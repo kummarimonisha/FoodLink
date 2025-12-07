@@ -200,11 +200,15 @@ def update_donation(donation_id):
 @jwt_required()
 def get_available_donations():
     """
-    Recipients can browse the available donations.
+    List approved and non-expired donations.
 
-    Filters applied:
-    - status must be "approved"
-    - not expired (based on expiration_date)
+    This endpoint now also supports basic filtering by category,
+    which is similar to the FoodItem "type" in the class diagram.
+
+    Query params:
+      - category=fruit
+      - category=fruit&category=vegetable
+      - category=fruit,vegetable
     """
     user = get_current_user()
     if not require_role(user, ["recipient", "donor", "admin"]):
@@ -212,26 +216,56 @@ def get_available_donations():
 
     now = datetime.utcnow()
 
-    donations = Donation.query.filter(
+    # Base query: only approved and not expired donations
+    query = Donation.query.filter(
         Donation.status == "approved",
         (Donation.expiration_date.is_(None) | (Donation.expiration_date > now)),
-    ).order_by(Donation.created_at.desc()).all()
+    )
+
+    # ------------------------------------------------------------------
+    # Optional filters
+    # ------------------------------------------------------------------
+    # We use the "category" field of Donation to approximate FoodItem.type
+    # from the class diagram.
+    #
+    # Examples:
+    #   /api/donations/available?category=fruit
+    #   /api/donations/available?category=fruit&category=vegetable
+    #   /api/donations/available?category=fruit,vegetable
+    categories = request.args.getlist("category")
+
+    # If the frontend sends a single comma-separated string, handle it too
+    if not categories:
+        single_category = request.args.get("category")
+        if single_category:
+            categories = [
+                c.strip() for c in single_category.split(",") if c.strip()
+            ]
+
+    if categories:
+        query = query.filter(Donation.category.in_(categories))
+
+    # Execute the final query
+    donations = query.order_by(Donation.created_at.desc()).all()
 
     result = []
     for d in donations:
-        result.append({
-            "id": d.id,
-            "title": d.title,
-            "description": d.description,
-            "category": d.category,
-            "quantity": d.quantity,
-            "status": d.status,
-            "expiration_date": d.expiration_date.isoformat() if d.expiration_date else None,
-            "donor_id": d.donor_id,
-        })
+        result.append(
+            {
+                "id": d.id,
+                "title": d.title,
+                "description": d.description,
+                "category": d.category,
+                "quantity": d.quantity,
+                "status": d.status,
+                "expiration_date": d.expiration_date.isoformat()
+                if d.expiration_date
+                else None,
+                "donor_id": d.donor_id,
+            }
+        )
 
     return jsonify(result), 200
-
 
 # ----------------------------------------------------------
 # 4) Admin view: see pending donations
